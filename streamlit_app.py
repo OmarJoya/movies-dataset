@@ -1,29 +1,21 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
-
+import hashlib
 
 import datetime
 # Import the JWT library and its exceptions.
 import jwt
 from jwt.exceptions import ExpiredSignatureError, DecodeError
 
-# Show the page title and description.
-st.set_page_config(page_title="Movies dataset", page_icon="🎬")
-st.title("🎬 Movies dataset")
-st.write(
-    """
-    This app visualizes data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata).
-    It shows which movie genre performed best at the box office over the years. Just 
-    click on the widgets below to explore!
-    """
-)
-
 SECRET_KEY = "test"
+# Function to derive the key (to match the hashing done in .NET)
+def derive_key(secret_key):
+    return hashlib.sha256(secret_key.encode()).digest()
 
 def generateToken():
     # List of location codes you want in the payload
-    location_codes = ["LOC001", "LOC002", "LOC003"]
+    location_codes = ["ALDBAT", "ALDCTV", "DGLEEB"]
 
     # Create payload with location codes
     payload = {
@@ -31,18 +23,22 @@ def generateToken():
         "iat": datetime.datetime.utcnow(),  # Issued at (current time)
         "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)  # Expiration time (30 seconds)
     }
+    derived_key = derive_key(SECRET_KEY)
+    
     # Generar el JWT
-    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    token = jwt.encode(payload, derived_key, algorithm="HS256")
     # Mostrar el JWT
     st.write("JWT generado:", token)
 
 # generateToken()
 
-
 def is_token_valid(token):
     try:
+         # Derive the same 32-byte key used in .NET
+        derived_key = derive_key(SECRET_KEY)
+
         # Decode the JWT and verify its signature
-        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        decoded_token = jwt.decode(token, derived_key, algorithms=["HS256"])
         st.write(f"Payload: {decoded_token}")
         
         # If we successfully decode it, the token is valid
